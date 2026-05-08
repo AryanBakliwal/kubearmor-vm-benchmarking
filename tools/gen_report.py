@@ -2,6 +2,8 @@ import pandas as pd
 import sys
 import os
 import re
+from openpyxl import load_workbook
+import shutil
 
 if len(sys.argv) != 3:
     print("Usage: python3 generate_report.py <version> <enforcer>")
@@ -123,6 +125,48 @@ def get_host_metrics(version, scenario, enforcer):
     except:
         return "err", "err", "err"
 
+def generate_excel_report(report_data, version, enforcer):
+    template_path = "KubeArmor Performance Benchmarking Report.xlsx" 
+    output_path = f"benchmark_report_{version}_{enforcer}.xlsx"
+    
+    if not os.path.exists(template_path):
+        print(f"Error: Template '{template_path}' not found. Cannot generate Excel report.")
+        return
+
+    # 1. CREATE the new file by explicitly copying the template
+    print(f"Creating new Excel file from template: {output_path}")
+    shutil.copy(template_path, output_path)
+
+    # 2. LOAD the newly created file (NOT the template)
+    wb = load_workbook(output_path)
+    ws = wb.active
+
+    # 3. FILL VALUES
+    # Fill the merged title cell (Row 1, Column A)
+    ws['A1'] = f"KubeArmor Benchmark Report: {version} ({enforcer.upper()})"
+
+    # Start filling data at Row 3 (since Row 2 has your headers)
+    start_row = 3
+
+    for i, row_data in enumerate(report_data):
+        current_row = start_row + i
+        
+        # Mapping data to columns precisely matching your template CSV structure
+        ws.cell(row=current_row, column=1, value=row_data["Scenario"])
+        ws.cell(row=current_row, column=2, value=row_data["Users"])
+        ws.cell(row=current_row, column=3, value=row_data["KA CPU"])
+        ws.cell(row=current_row, column=4, value=row_data["KA Memory"])
+        ws.cell(row=current_row, column=5, value=row_data["App Throughput (req/s)"])
+        ws.cell(row=current_row, column=6, value=row_data["App Latency (ms)"])
+        ws.cell(row=current_row, column=7, value=row_data["Throughput Overhead"])
+        ws.cell(row=current_row, column=8, value=row_data["Host CPU Util"])
+        ws.cell(row=current_row, column=9, value=row_data["Host Memory Usage"])
+        ws.cell(row=current_row, column=10, value=row_data["Host Disk I/O"])
+
+    # 4. SAVE the modifications to the new file
+    wb.save(output_path)
+    print(f"Excel report successfully generated and filled: {output_path}")
+
 # Logic for baseline comparison
 baseline_tp, _ = get_locust_metrics(version, "baseline_no_kubearmor", enforcer)
 
@@ -172,7 +216,4 @@ with open(md_filename, "w") as f:
 print(f"Markdown report saved to {md_filename}")
 
 # 2. Generate Excel Report
-excel_filename = f"benchmark_report_{version}_{enforcer}.xlsx"
-df_report.to_excel(excel_filename, index=False, sheet_name="Benchmark Results")
-
-print(f"Excel report saved to {excel_filename}")
+generate_excel_report(report_data, version, enforcer)

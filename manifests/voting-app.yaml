@@ -1,5 +1,6 @@
 services:
   vote:
+    container_name: vote
     image: dockersamples/examplevotingapp_vote
     depends_on:
       redis:
@@ -13,6 +14,7 @@ services:
       env: benchmark
 
   result:
+    container_name: result
     image: dockersamples/examplevotingapp_result
     depends_on:
       db:
@@ -26,6 +28,7 @@ services:
       env: benchmark
 
   worker:
+    container_name: worker
     image: dockersamples/examplevotingapp_worker
     depends_on:
       redis:
@@ -38,6 +41,7 @@ services:
       env: benchmark
 
   redis:
+    container_name: redis
     image: redis:alpine
     volumes:
       - "./healthchecks:/healthchecks"
@@ -52,6 +56,7 @@ services:
       env: benchmark
 
   db:
+    container_name: db
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: "postgres"

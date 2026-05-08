@@ -1,14 +1,14 @@
 apiVersion: security.kubearmor.com/v1
 kind: KubeArmorPolicy
 metadata:
-  name: block-service-access-token-access
+  name: block-file-dir
 spec:
   selector:
     matchLabels:
-      env: benchmark
+      kubearmor.io/container.name: "vote"
   file:
     matchDirectories:
-    - dir: /run/secrets/kubernetes.io/serviceaccount/
+    - dir: /etc/
       recursive: true
   action:
     Block

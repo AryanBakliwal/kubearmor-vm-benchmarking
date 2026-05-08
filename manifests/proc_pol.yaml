@@ -5,7 +5,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      env: benchmark
+      kubearmor.io/container.name: "vote"
   process:
     matchPaths:
     - path: /usr/bin/apt

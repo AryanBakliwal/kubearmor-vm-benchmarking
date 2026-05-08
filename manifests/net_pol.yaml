@@ -6,7 +6,7 @@ spec:
   severity: 8
   selector:
     matchLabels:
-      env: benchmark
+      kubearmor.io/container.name: "vote"
   network:
     matchProtocols:
     - protocol: icmp
