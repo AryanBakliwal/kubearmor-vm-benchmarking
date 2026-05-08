@@ -125,22 +125,54 @@ def get_host_metrics(version, scenario, enforcer):
 
 # Logic for baseline comparison
 baseline_tp, _ = get_locust_metrics(version, "baseline_no_kubearmor", enforcer)
-report_filename = f"benchmark_report_{version}_{enforcer}.md"
 
-with open(report_filename, "w") as f:
+report_data = []
+
+for dir_name, display_name in scenarios.items():
+    ka_cpu, ka_mem = get_ka_stats(version, dir_name, enforcer)
+    reqs, latency = get_locust_metrics(version, dir_name, enforcer)
+    host_cpu, host_mem, host_disk = get_host_metrics(version, dir_name, enforcer)
+    
+    # Calculate Overhead %
+    overhead = "0%"
+    if baseline_tp and reqs and dir_name != "baseline_no_kubearmor":
+        drop = ((baseline_tp - reqs) / baseline_tp) * 100
+        # Format as -X.X% or +X.X% (if performance improved slightly due to noise)
+        overhead = f"{drop:.2f}%" if drop >= 0 else f"+{abs(drop):.2f}%"
+    elif dir_name == "baseline_no_kubearmor":
+        overhead = "N/A"
+        ka_cpu, ka_mem = "N/A", "N/A"
+
+    report_data.append({
+        "Scenario": display_name,
+        "Users": users,
+        "KA CPU": ka_cpu,
+        "KA Memory": ka_mem,
+        "App Throughput (req/s)": reqs if reqs else "-",
+        "App Latency (ms)": latency if latency else "-",
+        "Throughput Overhead": overhead,
+        "Host CPU Util": host_cpu,
+        "Host Memory Usage": host_mem,
+        "Host Disk I/O": host_disk
+    })
+
+# Convert list of dictionaries to a pandas DataFrame
+df_report = pd.DataFrame(report_data)
+
+# 1. Generate Markdown Report
+md_filename = f"benchmark_report_{version}_{enforcer}.md"
+with open(md_filename, "w") as f:
     f.write(f"## KubeArmor Benchmark Report: {version} ({enforcer.upper()})\n\n")
-    # Updated Headers
+    # Manually write header to match exact requested format
     f.write("| Scenario | Users | KA CPU | KA Memory | App Throughput (req/s) | App Latency (ms) | Host CPU Util | Host Memory Usage | Host Disk I/O |\n")
     f.write("|---|---|---|---|---|---|---|---|---|\n")
+    for row in report_data:
+        f.write(f"| {row['Scenario']} | {row['Users']} | {row['KA CPU']} | {row['KA Memory']} | {row['App Throughput (req/s)']} | {row['App Latency (ms)']} | {row['Host CPU Util']} | {row['Host Memory Usage']} | {row['Host Disk I/O']} |\n")
 
-    for dir_name, display_name in scenarios.items():
-        ka_cpu, ka_mem = get_ka_stats(version, dir_name, enforcer)
-        reqs, latency = get_locust_metrics(version, dir_name, enforcer)
-        host_cpu, host_mem, host_disk = get_host_metrics(version, dir_name, enforcer)
-        
-        if dir_name == "baseline_no_kubearmor":
-            ka_cpu, ka_mem = "N/A", "N/A"
-            
-        f.write(f"| {display_name} | {users} | {ka_cpu} | {ka_mem} | {reqs or '-'} | {latency or '-'} | {host_cpu} | {host_mem} | {host_disk} |\n")
+print(f"Markdown report saved to {md_filename}")
 
-print(f"Report successfully saved to {report_filename}")
+# 2. Generate Excel Report
+excel_filename = f"benchmark_report_{version}_{enforcer}.xlsx"
+df_report.to_excel(excel_filename, index=False, sheet_name="Benchmark Results")
+
+print(f"Excel report saved to {excel_filename}")
