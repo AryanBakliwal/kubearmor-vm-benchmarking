@@ -122,6 +122,11 @@ for SCENARIO in "${SCENARIOS[@]}"; do
     echo "Waiting for Voting app to stabilize (30s)..."
     sleep 30
 
+    # Warmup
+    echo "Warming up the environment (30s)..."
+    locust -f tools/locustfile.py --headless -u 100 -r 10 --run-time 30s \
+        --host=http://localhost:8080
+
     # Apply policy
     if [ "$PROC_POL" != "false" ]; then
         echo "Applying process KSP"
