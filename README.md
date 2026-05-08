@@ -61,9 +61,9 @@ The suite executes the following scenarios in order:
 * `manifests/`: Contains Docker Compose files and KubeArmor policies.
 * `tools/`:
     * `locustfile.py`: Defines the traffic pattern for the Voting App.
-    * `gen_report.py`: Aggregates raw CSV/TXT data into a final Markdown report.
+    * `gen_report.py`: Aggregates raw CSV/TXT data into a final Markdown and Excel reports.
     * `venv/`: Your Python virtual environment (ignored by git).
 
 ## 📝 Result Output
-Once the script finishes, it generates a markdown report in the root directory:
-`benchmark_report_<version>_<enforcer>.md`
+Once the script finishes, it generates a markdown and an excel reports in the root directory:
+`benchmark_report_<version>_<enforcer>.md` and `benchmark_report_<version>_<enforcer>.xlsx`
