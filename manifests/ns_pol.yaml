@@ -1,0 +1,17 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorNetworkPolicy
+metadata:
+  name: nsp-ingress-audit-ssh
+spec:
+  nodeSelector:
+    matchLabels:
+      kubearmor.io/hostname: "*"
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: "192.168.29.0/24"
+    ports:
+    - port: "ssh"
+  message: "New SSH connection!"
+  severity: 5
+  action: Audit

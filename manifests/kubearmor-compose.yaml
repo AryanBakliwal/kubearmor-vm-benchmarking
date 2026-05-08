@@ -1,0 +1,72 @@
+volumes:
+  kubearmor-init-vol:
+    name: kubearmor-init-vol
+
+services:
+  kubearmor-init:
+    container_name: kubearmor-init
+    image: docker.io/kubearmor/kubearmor-init:${KA_VERSION}
+    pull_policy: "always"
+    user: root
+    labels:
+      app: kubearmor-init
+    volumes:
+      - "kubearmor-init-vol:/opt/kubearmor/BPF:rw"
+      - "/lib/modules:/lib/modules:ro"
+      - "/sys/fs/bpf:/sys/fs/bpf:ro"
+      - "/sys/kernel/security:/sys/kernel/security:ro"
+      - "/sys/kernel/debug:/sys/kernel/debug:ro"
+      - "/media/root/etc/os-release:/media/root/etc/os-release:ro"
+      - "/usr/src:/usr/src:ro,z"
+    restart: on-failure
+    privileged: true
+    network_mode: "host"
+
+  kubearmor:
+    depends_on:
+      kubearmor-init:
+        condition: service_completed_successfully
+    hostname: ${KA_HOSTNAME}
+    container_name: kubearmor
+    image: "docker.io/kubearmor/kubearmor:${KA_VERSION}"
+    pull_policy: "always"
+    command: >
+      -k8s=false
+      -enableKubeArmorPolicy=true
+      -enableKubeArmorHostPolicy=true
+      -criSocket=unix:///var/run/docker.sock
+      -defaultFilePosture=audit
+      -defaultNetworkPosture=audit
+      -defaultCapabilitiesPosture=audit
+      -hostDefaultFilePosture=audit
+      -hostDefaultNetworkPosture=audit
+      -hostDefaultCapabilitiesPosture=audit
+      -alertThrottling=true
+      -maxAlertPerSec=10
+      -throttleSec=30
+      -lsm=${ENFORCER}
+      ${KA_DYNAMIC_ARGS}
+    labels:
+      app: kubearmor
+    volumes:
+      - "kubearmor-init-vol:/opt/kubearmor/BPF"
+      - "/sys/fs/bpf:/sys/fs/bpf"
+      - "/sys/kernel/security:/sys/kernel/security"
+      - "/sys/kernel/debug:/sys/kernel/debug"
+      - "/etc/apparmor.d:/etc/apparmor.d"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/run/docker:/run/docker"
+      - "/var/lib/docker:/var/lib/docker"
+      - "/usr/share/kubearmor:/usr/share/kubearmor:rw"
+      - "/var/run/kubearmor:/var/run/kubearmor:rw"
+    restart: always
+    network_mode: "host"
+    pid: "host"
+    stop_grace_period: 20s
+    privileged: true
+    logging:
+      driver: local
+      options:
+        max-size: "50m"
+        max-file: "1"
+        compress: "false"

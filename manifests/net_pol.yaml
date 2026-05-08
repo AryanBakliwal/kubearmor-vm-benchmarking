@@ -1,0 +1,14 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: net-icmp-audit
+spec:
+  severity: 8
+  selector:
+    matchLabels:
+      env: benchmark
+  network:
+    matchProtocols:
+    - protocol: icmp
+  action:
+    Audit
